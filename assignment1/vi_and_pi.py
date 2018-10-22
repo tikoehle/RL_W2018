@@ -36,8 +36,23 @@ def policy_evaluation(P, nS, nA, policy, gamma=0.9, max_iteration=1000, tol=1e-3
 	############################
 	# YOUR IMPLEMENTATION HERE #
 	############################
-	return np.zeros(nS)
+	V = np.zeros(nS)
 
+	for i in range(max_iteration):
+		delta = 0
+		for s in range(nS):
+			v = 0
+			a = policy[s]
+			for p, next_s, r, term in P[s][a]:
+				v += p * (r + gamma * V[next_s])
+			delta = max(delta, np.abs(v - V[s]))
+			V[s] = v
+
+		print("Value delta: %.3f" % delta)
+		if delta < tol:
+			break
+
+	return V
 
 def policy_improvement(P, nS, nA, value_from_policy, policy, gamma=0.9):
 	"""Given the value function from policy improve the policy.
@@ -68,8 +83,16 @@ def policy_improvement(P, nS, nA, value_from_policy, policy, gamma=0.9):
 	############################
 	# YOUR IMPLEMENTATION HERE #
 	############################
-	return np.zeros(nS, dtype='int')
+	new_policy = np.zeros(nS, dtype='int')
 
+	for s in range(nS):
+		v_values = np.zeros(nA)
+		for a in range(nA):
+			for p, next_s, r, term in P[s][a]:
+				v_values[a] =  p * (r + gamma * value_from_policy[next_s])
+		new_policy[s] = np.argmax(v_values)
+
+	return new_policy
 
 def policy_iteration(P, nS, nA, gamma=0.9, max_iteration=20, tol=1e-3):
 	"""Runs policy iteration.
@@ -102,6 +125,18 @@ def policy_iteration(P, nS, nA, gamma=0.9, max_iteration=20, tol=1e-3):
 	############################
 	# YOUR IMPLEMENTATION HERE #
 	############################
+	for i in range(max_iteration):
+		old_policy = np.copy(policy)
+
+		V = policy_evaluation(P, nS, nA, policy, gamma, max_iteration, tol)
+		policy = policy_improvement(P, nS, nA, V, policy, gamma)
+
+		delta = np.linalg.norm(policy, ord=1) - np.linalg.norm(old_policy, ord=1)   # L1-norm
+		print("Policy delta: %.3f" % delta)
+		if (delta < tol):
+			print("Policy has converged after %d iterations!" % (i+1))
+			break
+
 	return V, policy
 
 def value_iteration(P, nS, nA, gamma=0.9, max_iteration=20, tol=1e-3):
@@ -193,3 +228,4 @@ if __name__ == "__main__":
 	example(env)
 	V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, max_iteration=20, tol=1e-3)
 	V_pi, p_pi = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, max_iteration=20, tol=1e-3)
+	render_single(env, p_pi)
