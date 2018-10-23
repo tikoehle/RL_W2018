@@ -169,6 +169,25 @@ def value_iteration(P, nS, nA, gamma=0.9, max_iteration=20, tol=1e-3):
 	############################
 	# YOUR IMPLEMENTATION HERE #
 	############################
+	for i in range(max_iteration):
+		delta = 0
+		for s in range(nS):
+			v = 0
+			v_values = np.zeros(nA)
+			for a in range(nA):                     # The max to be taken over all possible actions.
+				for p, next_s, r, term in P[s][a]:
+					v = p * (r + gamma * V[next_s])
+				v_values[a] = v
+			v = np.max(v_values)                    # The max v-value of the state.
+			policy[s] = np.argmax(v_values)         # Identical to policy improvement.
+			delta = max(delta, np.abs(v - V[s]))
+			V[s] = v
+
+		print("Value iteration delta: %.3f" % delta)
+		if delta < tol:
+			print("Policy has converged after %d iterations!" % (i+1))
+			break
+
 	return V, policy
 
 def example(env):
@@ -226,6 +245,12 @@ if __name__ == "__main__":
 	print env.__doc__
 	print "Here is an example of state, action, reward, and next state"
 	example(env)
+	t1 = time.time()
 	V_vi, p_vi = value_iteration(env.P, env.nS, env.nA, gamma=0.9, max_iteration=20, tol=1e-3)
+	t2 = time.time()
 	V_pi, p_pi = policy_iteration(env.P, env.nS, env.nA, gamma=0.9, max_iteration=20, tol=1e-3)
+	t3 = time.time()
 	render_single(env, p_pi)
+	render_single(env, p_vi)
+	print("Value Iteration took %fs" % (t2-t1))
+	print("Policy Iteration took %fs" % (t3-t2))
